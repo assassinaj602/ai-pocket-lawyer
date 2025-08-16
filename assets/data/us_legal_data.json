@@ -1,0 +1,126 @@
+{
+  "common_laws": {
+    "tenant_rights": {
+      "title": "Tenant Rights",
+      "description": "Laws protecting tenants from unfair practices",
+      "scenarios": [
+        {
+          "id": "us_tenant_001",
+          "problem": "Landlord entering without notice",
+          "applicable_law": "Most states require 24-48 hours notice before landlord entry except emergencies",
+          "rights_summary": "You have the right to peaceful enjoyment of your rental property. Landlords cannot enter without proper notice except in emergencies.",
+          "actions": [
+            "Document all unauthorized entries with dates and times",
+            "Send written notice to landlord about violation",
+            "Check your state's specific notice requirements (typically 24-48 hours)",
+            "Contact local tenant rights organization if violations continue",
+            "Consider legal action if pattern of harassment established"
+          ],
+          "letter_template": "formal_notice_unauthorized_entry"
+        },
+        {
+          "id": "us_tenant_002", 
+          "problem": "Security deposit not returned",
+          "applicable_law": "Security deposits must be returned within 14-60 days depending on state, with itemized deductions",
+          "rights_summary": "You have the right to receive your security deposit back within the timeframe specified by your state law, minus legitimate deductions for damages beyond normal wear and tear.",
+          "actions": [
+            "Review your lease agreement for deposit terms",
+            "Document the condition of the property with photos when moving out",
+            "Send written demand letter to landlord",
+            "File complaint with local housing authority",
+            "Consider small claims court if deposit exceeds $500"
+          ],
+          "letter_template": "security_deposit_demand"
+        }
+      ]
+    },
+    "employment": {
+      "title": "Employment Rights",
+      "description": "Workplace protection laws",
+      "scenarios": [
+        {
+          "id": "us_employment_001",
+          "problem": "Workplace harassment",
+          "applicable_law": "Title VII of Civil Rights Act protects against harassment based on protected characteristics",
+          "rights_summary": "You have the right to work in an environment free from harassment based on race, gender, religion, age, disability, or other protected characteristics.",
+          "actions": [
+            "Document all incidents with dates, times, witnesses",
+            "Report to HR or supervisor in writing",
+            "File complaint with EEOC within 180-300 days",
+            "Keep copies of all communications",
+            "Consider consulting employment attorney"
+          ],
+          "letter_template": "harassment_complaint"
+        }
+      ]
+    },
+    "consumer_protection": {
+      "title": "Consumer Protection",
+      "description": "Laws protecting consumers from fraud and unfair practices",
+      "scenarios": [
+        {
+          "id": "us_consumer_001",
+          "problem": "Online purchase scam",
+          "applicable_law": "Federal Trade Commission Act prohibits unfair or deceptive practices in commerce",
+          "rights_summary": "You have the right to receive goods as advertised and to dispute fraudulent charges on your credit card.",
+          "actions": [
+            "Contact your credit card company to dispute charges",
+            "File complaint with FTC at reportfraud.ftc.gov",
+            "Report to state attorney general's office",
+            "Keep all documentation and communications",
+            "Consider filing police report for criminal fraud"
+          ],
+          "letter_template": "fraud_dispute_letter"
+        }
+      ]
+    },
+    "contracts": {
+      "title": "Contract Disputes",
+      "description": "Laws governing contract formation and enforcement",
+      "scenarios": [
+        {
+          "id": "us_contract_001",
+          "problem": "Breach of service contract",
+          "applicable_law": "Uniform Commercial Code and state contract law govern enforcement of agreements",
+          "rights_summary": "You have the right to receive services as agreed in your contract or seek remedies for breach.",
+          "actions": [
+            "Review contract terms and identify specific breaches",
+            "Document all communications and failed performance",
+            "Send formal notice of breach",
+            "Attempt good faith negotiation",
+            "Consider mediation or small claims court"
+          ],
+          "letter_template": "breach_of_contract_notice"
+        }
+      ]
+    }
+  },
+  "legal_aid_contacts": {
+    "national": [
+      {
+        "name": "Legal Aid Corporation",
+        "phone": "202-295-1500",
+        "website": "https://www.lsc.gov/find-legal-aid",
+        "description": "National directory of legal aid organizations"
+      }
+    ],
+    "by_state": {
+      "california": [
+        {
+          "name": "Legal Aid Foundation of Los Angeles",
+          "phone": "323-801-7990",
+          "website": "https://lafla.org",
+          "areas": ["housing", "immigration", "consumer"]
+        }
+      ],
+      "new_york": [
+        {
+          "name": "Legal Aid Society",
+          "phone": "212-577-3300", 
+          "website": "https://legalaidnyc.org",
+          "areas": ["housing", "family", "immigration"]
+        }
+      ]
+    }
+  }
+}

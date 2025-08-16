@@ -1,0 +1,132 @@
+{
+  "common_laws": {
+    "tenant_rights": {
+      "title": "Tenant Rights",
+      "description": "Laws protecting tenants under UK housing law",
+      "scenarios": [
+        {
+          "id": "uk_tenant_001",
+          "problem": "Landlord entering without notice",
+          "applicable_law": "Housing Act 1988 requires landlords to give 24 hours notice before entry except emergencies",
+          "rights_summary": "You have the right to quiet enjoyment of your property. Landlords must give at least 24 hours notice before entering except in genuine emergencies.",
+          "actions": [
+            "Document unauthorized entries with dates and evidence",
+            "Send written complaint to landlord citing Housing Act 1988",
+            "Contact local council housing department",
+            "Seek advice from Shelter or Citizens Advice",
+            "Consider legal action for harassment if pattern continues"
+          ],
+          "letter_template": "uk_unauthorized_entry_complaint"
+        },
+        {
+          "id": "uk_tenant_002",
+          "problem": "Deposit not protected in scheme",
+          "applicable_law": "Housing Act 2004 requires deposits to be protected in government-approved scheme within 30 days",
+          "rights_summary": "Your landlord must protect your deposit in an approved scheme and provide prescribed information within 30 days.",
+          "actions": [
+            "Check if deposit is protected using scheme websites",
+            "Request prescribed information from landlord",
+            "Apply to county court for compensation (1-3x deposit amount)",
+            "Landlord cannot serve Section 21 notice if deposit not protected",
+            "Contact Shelter for guidance on court proceedings"
+          ],
+          "letter_template": "uk_deposit_protection_demand"
+        }
+      ]
+    },
+    "employment": {
+      "title": "Employment Rights",
+      "description": "UK employment law protections",
+      "scenarios": [
+        {
+          "id": "uk_employment_001",
+          "problem": "Workplace discrimination",
+          "applicable_law": "Equality Act 2010 protects against discrimination based on protected characteristics",
+          "rights_summary": "You have the right to work free from discrimination based on age, disability, gender, race, religion, sexuality, or other protected characteristics.",
+          "actions": [
+            "Keep detailed records of discriminatory incidents",
+            "Follow internal grievance procedures first",
+            "Contact ACAS for free advice and mediation",
+            "File tribunal claim within 3 months less one day",
+            "Consider legal representation for complex cases"
+          ],
+          "letter_template": "uk_discrimination_grievance"
+        }
+      ]
+    },
+    "consumer_protection": {
+      "title": "Consumer Rights",
+      "description": "UK consumer protection laws",
+      "scenarios": [
+        {
+          "id": "uk_consumer_001",
+          "problem": "Faulty goods purchased online",
+          "applicable_law": "Consumer Rights Act 2015 gives right to repair, replacement, or refund for faulty goods",
+          "rights_summary": "You have the right to goods that are of satisfactory quality, fit for purpose, and as described. You can get repair, replacement, or refund.",
+          "actions": [
+            "Contact retailer immediately about fault",
+            "Allow one opportunity for repair or replacement",
+            "Request refund if repair/replacement fails",
+            "Use credit card chargeback if applicable",
+            "Report to Trading Standards if retailer refuses"
+          ],
+          "letter_template": "uk_faulty_goods_complaint"
+        }
+      ]
+    },
+    "contracts": {
+      "title": "Contract Law",
+      "description": "UK contract law and enforcement",
+      "scenarios": [
+        {
+          "id": "uk_contract_001",
+          "problem": "Service provider breach of contract",
+          "applicable_law": "Contract law requires parties to perform obligations as agreed or face legal consequences",
+          "rights_summary": "You have the right to receive services as contracted and seek remedies including damages for breach.",
+          "actions": [
+            "Review contract terms to identify specific breaches",
+            "Send formal letter before action citing breaches",
+            "Attempt resolution through complaint procedures",
+            "Consider mediation through trade association",
+            "File claim in appropriate court if necessary"
+          ],
+          "letter_template": "uk_breach_of_contract_letter"
+        }
+      ]
+    }
+  },
+  "legal_aid_contacts": {
+    "national": [
+      {
+        "name": "Citizens Advice",
+        "phone": "03444 111 444",
+        "website": "https://www.citizensadvice.org.uk",
+        "description": "Free, confidential advice on legal, debt, consumer, housing and other problems"
+      },
+      {
+        "name": "Shelter",
+        "phone": "0808 800 4444",
+        "website": "https://england.shelter.org.uk",
+        "description": "Housing advice and legal help"
+      }
+    ],
+    "by_region": {
+      "london": [
+        {
+          "name": "Free Representation Unit",
+          "phone": "020 7611 9555",
+          "website": "https://www.thefru.org.uk",
+          "areas": ["employment", "immigration", "social security"]
+        }
+      ],
+      "manchester": [
+        {
+          "name": "Greater Manchester Law Centre",
+          "phone": "0161 740 7722",
+          "website": "https://www.gmlaw.org.uk",
+          "areas": ["housing", "employment", "immigration"]
+        }
+      ]
+    }
+  }
+}
