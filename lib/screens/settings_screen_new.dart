@@ -89,28 +89,75 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // Voice Input Toggle
-                      SwitchListTile(
-                        secondary: const Icon(Icons.mic),
-                        title: const Text('Voice Input'),
-                        subtitle: const Text(
-                          'Enable voice-to-text functionality',
-                        ),
-                        value: provider.isVoiceEnabled,
-                        onChanged: (value) {
-                          provider.setVoiceEnabled(value);
-                        },
+                      // Theme Mode Selection
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.palette,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Theme Mode',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Theme Mode Options
+                      Column(
+                        children: [
+                          RadioListTile<ThemeMode>(
+                            title: const Text('Light Mode'),
+                            subtitle: const Text('Always use light theme'),
+                            value: ThemeMode.light,
+                            groupValue: provider.themeMode,
+                            onChanged: (ThemeMode? value) {
+                              if (value != null) {
+                                provider.setThemeMode(value);
+                              }
+                            },
+                            dense: true,
+                          ),
+                          RadioListTile<ThemeMode>(
+                            title: const Text('Dark Mode'),
+                            subtitle: const Text('Always use dark theme'),
+                            value: ThemeMode.dark,
+                            groupValue: provider.themeMode,
+                            onChanged: (ThemeMode? value) {
+                              if (value != null) {
+                                provider.setThemeMode(value);
+                              }
+                            },
+                            dense: true,
+                          ),
+                          RadioListTile<ThemeMode>(
+                            title: const Text('System Mode'),
+                            subtitle: const Text('Follow system preference'),
+                            value: ThemeMode.system,
+                            groupValue: provider.themeMode,
+                            onChanged: (ThemeMode? value) {
+                              if (value != null) {
+                                provider.setThemeMode(value);
+                              }
+                            },
+                            dense: true,
+                          ),
+                        ],
                       ),
 
                       const Divider(),
 
-                      // Theme Toggle (if you want to add this later)
-                      SwitchListTile(
-                        secondary: const Icon(Icons.dark_mode),
-                        title: const Text('Dark Mode'),
-                        subtitle: const Text('Switch to dark theme'),
-                        value: false, // You can implement theme switching later
-                        onChanged: null, // Disabled for now
+                      // Location Settings Info
+                      ListTile(
+                        leading: const Icon(Icons.location_on),
+                        title: const Text('Location Services'),
+                        subtitle: const Text(
+                          'Used for jurisdiction-specific legal guidance',
+                        ),
+                        contentPadding: EdgeInsets.zero,
                       ),
                     ],
                   ),

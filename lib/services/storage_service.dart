@@ -82,6 +82,14 @@ class StorageService {
     return _settingsBox?.get('openai_api_key');
   }
 
+  static Future<void> setThemeMode(String themeMode) async {
+    await _settingsBox?.put('theme_mode', themeMode);
+  }
+
+  static String? getThemeMode() {
+    return _settingsBox?.get('theme_mode', defaultValue: 'system');
+  }
+
   static Future<void> close() async {
     await _analysisBox?.close();
     await _settingsBox?.close();

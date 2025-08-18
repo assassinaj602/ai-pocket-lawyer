@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../services/storage_service.dart';
@@ -9,7 +9,7 @@ class AppSettingsProvider extends ChangeNotifier {
   String? _userLocation;
   bool _isFirstTimeUser = true;
   bool _isLocationEnabled = false;
-  bool _isVoiceEnabled = true;
+  ThemeMode _themeMode = ThemeMode.system;
 
   // Available jurisdictions
   final List<Map<String, String>> _availableJurisdictions = [
@@ -22,7 +22,7 @@ class AppSettingsProvider extends ChangeNotifier {
   String? get userLocation => _userLocation;
   bool get isFirstTimeUser => _isFirstTimeUser;
   bool get isLocationEnabled => _isLocationEnabled;
-  bool get isVoiceEnabled => _isVoiceEnabled;
+  ThemeMode get themeMode => _themeMode;
   List<Map<String, String>> get availableJurisdictions =>
       _availableJurisdictions;
 
@@ -47,8 +47,21 @@ class AppSettingsProvider extends ChangeNotifier {
       _jurisdiction = StorageService.getJurisdiction();
       _userLocation = StorageService.getUserLocation();
       _isFirstTimeUser = StorageService.isFirstTimeUser();
-      // For voice enabled, we'll use shared preferences or default to true
-      _isVoiceEnabled = true; // Default value for now
+
+      // Load theme mode from storage
+      String? savedTheme = StorageService.getThemeMode();
+      switch (savedTheme) {
+        case 'light':
+          _themeMode = ThemeMode.light;
+          break;
+        case 'dark':
+          _themeMode = ThemeMode.dark;
+          break;
+        case 'system':
+        default:
+          _themeMode = ThemeMode.system;
+          break;
+      }
 
       // Use post-frame callback to avoid setState during build
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -75,10 +88,22 @@ class AppSettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Set voice enabled
-  Future<void> setVoiceEnabled(bool enabled) async {
-    _isVoiceEnabled = enabled;
-    // Note: For now we just store in memory, could extend StorageService later
+  // Set theme mode
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    String themeString;
+    switch (mode) {
+      case ThemeMode.light:
+        themeString = 'light';
+        break;
+      case ThemeMode.dark:
+        themeString = 'dark';
+        break;
+      case ThemeMode.system:
+        themeString = 'system';
+        break;
+    }
+    await StorageService.setThemeMode(themeString);
     notifyListeners();
   }
 

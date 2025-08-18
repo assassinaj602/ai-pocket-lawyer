@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:html/parser.dart' as html_parser;
-import 'package:html/dom.dart';
+// (html_parser and dom were unused; removed to avoid analyzer warnings)
 
 class WebScrapingService {
   final Dio _dio = Dio();

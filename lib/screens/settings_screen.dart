@@ -88,27 +88,64 @@ class SettingsScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      
-                      // Voice Input Toggle
-                      SwitchListTile(
-                        secondary: const Icon(Icons.mic),
-                        title: const Text('Voice Input'),
-                        subtitle: const Text('Enable voice-to-text functionality'),
-                        value: provider.isVoiceEnabled,
-                        onChanged: (value) {
-                          provider.setVoiceEnabled(value);
-                        },
+
+                      // Theme Mode Selection
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.palette,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Theme Mode',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
-                      
-                      const Divider(),
-                      
-                      // Theme Toggle (if you want to add this later)
-                      SwitchListTile(
-                        secondary: const Icon(Icons.dark_mode),
-                        title: const Text('Dark Mode'),
-                        subtitle: const Text('Switch to dark theme'),
-                        value: false, // You can implement theme switching later
-                        onChanged: null, // Disabled for now
+                      const SizedBox(height: 12),
+
+                      // Theme Mode Options
+                      Column(
+                        children: [
+                          RadioListTile<ThemeMode>(
+                            title: const Text('Light Mode'),
+                            subtitle: const Text('Always use light theme'),
+                            value: ThemeMode.light,
+                            groupValue: provider.themeMode,
+                            onChanged: (ThemeMode? value) {
+                              if (value != null) {
+                                provider.setThemeMode(value);
+                              }
+                            },
+                            dense: true,
+                          ),
+                          RadioListTile<ThemeMode>(
+                            title: const Text('Dark Mode'),
+                            subtitle: const Text('Always use dark theme'),
+                            value: ThemeMode.dark,
+                            groupValue: provider.themeMode,
+                            onChanged: (ThemeMode? value) {
+                              if (value != null) {
+                                provider.setThemeMode(value);
+                              }
+                            },
+                            dense: true,
+                          ),
+                          RadioListTile<ThemeMode>(
+                            title: const Text('System Mode'),
+                            subtitle: const Text('Follow system preference'),
+                            value: ThemeMode.system,
+                            groupValue: provider.themeMode,
+                            onChanged: (ThemeMode? value) {
+                              if (value != null) {
+                                provider.setThemeMode(value);
+                              }
+                            },
+                            dense: true,
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -144,14 +181,13 @@ class SettingsScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.green.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.green.withOpacity(0.3)),
+                          border: Border.all(
+                            color: Colors.green.withOpacity(0.3),
+                          ),
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.check_circle,
-                              color: Colors.green[600],
-                            ),
+                            Icon(Icons.check_circle, color: Colors.green[600]),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -159,12 +195,15 @@ class SettingsScreen extends StatelessWidget {
                                 children: [
                                   Text(
                                     'AI Enhanced Legal Guidance',
-                                    style: Theme.of(context).textTheme.titleSmall
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
                                         ?.copyWith(fontWeight: FontWeight.bold),
                                   ),
                                   Text(
                                     'Powered by advanced AI with real-time legal information',
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
                                   ),
                                 ],
                               ),
@@ -210,7 +249,9 @@ class SettingsScreen extends StatelessWidget {
                       ListTile(
                         leading: const Icon(Icons.code),
                         title: const Text('Powered by'),
-                        subtitle: const Text('OpenRouter AI & Real-time Legal Data'),
+                        subtitle: const Text(
+                          'OpenRouter AI & Real-time Legal Data',
+                        ),
                         contentPadding: EdgeInsets.zero,
                       ),
                     ],
@@ -223,10 +264,7 @@ class SettingsScreen extends StatelessWidget {
               Card(
                 elevation: 2,
                 child: ExpansionTile(
-                  leading: Icon(
-                    Icons.warning,
-                    color: Colors.orange[600],
-                  ),
+                  leading: Icon(Icons.warning, color: Colors.orange[600]),
                   title: const Text('Important Legal Disclaimer'),
                   children: [
                     Padding(

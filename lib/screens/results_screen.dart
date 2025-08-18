@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/legal_analysis_provider.dart';
 import '../models/analysis_result.dart';
 import '../widgets/legal_letter_viewer.dart';
@@ -148,11 +149,72 @@ class ResultsScreen extends StatelessWidget {
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),
+                            const Spacer(),
+                            Builder(
+                              builder: (context) {
+                                final isAI = analysis.rightsSummary.contains(
+                                  '## Legal Analysis',
+                                );
+                                return Chip(
+                                  label: Text(isAI ? 'AI' : 'Local'),
+                                  backgroundColor:
+                                      isAI
+                                          ? Theme.of(context)
+                                              .colorScheme
+                                              .primary
+                                              .withOpacity(0.15)
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .tertiary
+                                              .withOpacity(0.15),
+                                  labelStyle: TextStyle(
+                                    color:
+                                        isAI
+                                            ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                            : Theme.of(
+                                              context,
+                                            ).colorScheme.tertiary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                );
+                              },
+                            ),
                           ],
+                        ),
+                        const SizedBox(height: 8),
+                        Builder(
+                          builder: (context) {
+                            final isAI = analysis.rightsSummary.contains(
+                              '## Legal Analysis',
+                            );
+                            if (isAI) return const SizedBox.shrink();
+                            return Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceContainerHigh,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Showing local guidance. Add your OpenRouter key to .env or run with --dart-define to enable AI analysis.',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(height: 12),
                         MarkdownBody(
                           data: analysis.rightsSummary,
+                          onTapLink: (text, href, title) {
+                            if (href != null) {
+                              _launchUrl(context, href);
+                            }
+                          },
                           styleSheet: MarkdownStyleSheet(
                             p: Theme.of(context).textTheme.bodyMedium,
                             h1: Theme.of(context).textTheme.headlineSmall
@@ -164,6 +226,13 @@ class ResultsScreen extends StatelessWidget {
                             listBullet: Theme.of(context).textTheme.bodyMedium,
                             strong: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(fontWeight: FontWeight.bold),
+                            a: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              decoration: TextDecoration.underline,
+                              decorationColor:
+                                  Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
@@ -328,6 +397,36 @@ class ResultsScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Future<void> _launchUrl(BuildContext context, String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Show a fallback message if the URL can't be launched
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Could not open: $url'),
+              action: SnackBarAction(
+                label: 'Copy',
+                onPressed: () {
+                  // Copy URL to clipboard logic would go here
+                },
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error opening link: $e')));
+      }
+    }
   }
 
   void _shareAnalysis(LegalAnalysisResult analysis) {

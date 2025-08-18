@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/legal_analysis_provider.dart';
 import '../providers/app_settings_provider.dart';
-import '../widgets/voice_input_button.dart';
 import 'results_screen.dart';
 import 'saved_cases_screen.dart';
 import 'settings_screen.dart';
@@ -16,31 +15,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
-  bool _speechEnabled = false;
-  bool _isListening = false;
 
   @override
   void initState() {
     super.initState();
-    // Speech-to-text temporarily disabled for Android compatibility
-    _speechEnabled = false;
-  }
-
-  void _startListening() async {
-    // Speech-to-text temporarily disabled for Android compatibility
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Voice input temporarily disabled for Android compatibility',
-        ),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _stopListening() async {
-    // Speech-to-text temporarily disabled for Android compatibility
-    setState(() => _isListening = false);
   }
 
   void _handleSearch() async {
@@ -140,23 +118,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         hintText:
                             'Example: My landlord entered my apartment without notice...',
                         border: const OutlineInputBorder(),
-                        suffixIcon: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            VoiceInputButton(
-                              isListening: _isListening,
-                              onPressed:
-                                  _isListening
-                                      ? _stopListening
-                                      : _startListening,
-                              enabled: _speechEnabled,
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () => _searchController.clear(),
-                            ),
-                          ],
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => _searchController.clear(),
                         ),
                       ),
                     ),
