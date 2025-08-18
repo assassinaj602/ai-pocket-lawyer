@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/storage_service.dart';
 import '../providers/app_settings_provider.dart';
-import 'home_screen.dart';
+import 'root_nav.dart';
 
 class GetStartedScreen extends StatelessWidget {
   const GetStartedScreen({super.key});
@@ -12,7 +12,7 @@ class GetStartedScreen extends StatelessWidget {
     if (context.mounted) {
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const RootNav()));
     }
   }
 

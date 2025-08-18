@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
 import '../providers/legal_analysis_provider.dart';
 import '../providers/app_settings_provider.dart';
 import 'results_screen.dart';
@@ -15,6 +18,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _listening = false;
+  List<PlatformFile> _imageFiles = [];
 
   @override
   void initState() {
@@ -34,16 +40,60 @@ class _HomeScreenState extends State<HomeScreen> {
       listen: false,
     );
 
-    await analysisProvider.analyzeProblem(
-      query: query,
-      jurisdiction: settingsProvider.jurisdiction,
-      userLocation: settingsProvider.userLocation,
-    );
+    // Convert PlatformFiles to File objects for OCR processing
+    List<File>? imageFileObjects;
+    if (_imageFiles.isNotEmpty) {
+      try {
+        imageFileObjects =
+            _imageFiles
+                .where((pf) => pf.path != null && pf.path!.isNotEmpty)
+                .map((pf) => File(pf.path!))
+                .where(
+                  (file) => file.existsSync(),
+                ) // Only include files that actually exist
+                .toList();
 
-    if (mounted && analysisProvider.currentAnalysis != null) {
-      Navigator.of(
-        context,
-      ).push(MaterialPageRoute(builder: (context) => const ResultsScreen()));
+        if (imageFileObjects.isEmpty) {
+          // If no valid files, set to null to avoid processing
+          imageFileObjects = null;
+          print('Warning: No valid image files found');
+        } else {
+          print('Found ${imageFileObjects.length} valid image files');
+        }
+      } catch (e) {
+        print('Error processing image files: $e');
+        imageFileObjects = null; // Fallback to no images
+      }
+    }
+
+    try {
+      await analysisProvider.analyzeProblem(
+        query: query,
+        jurisdiction: settingsProvider.jurisdiction,
+        userLocation: settingsProvider.userLocation,
+        imageFiles: imageFileObjects,
+      );
+
+      if (mounted && analysisProvider.currentAnalysis != null) {
+        FocusScope.of(context).unfocus();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const ResultsScreen()),
+          );
+        });
+      }
+    } catch (e) {
+      print('Search handling error: $e');
+      // Show error to user if needed
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -57,9 +107,15 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
+              FocusScope.of(context).unfocus();
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
+              });
             },
           ),
         ],
@@ -118,15 +174,47 @@ class _HomeScreenState extends State<HomeScreen> {
                         hintText:
                             'Example: My landlord entered my apartment without notice...',
                         border: const OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () => _searchController.clear(),
+                        suffixIcon: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Voice input',
+                              icon: Icon(
+                                _listening ? Icons.mic : Icons.mic_none,
+                              ),
+                              onPressed: _toggleListening,
+                            ),
+                            IconButton(
+                              tooltip: 'Clear',
+                              icon: const Icon(Icons.clear),
+                              onPressed: () => _searchController.clear(),
+                            ),
+                          ],
                         ),
                       ),
                     ),
 
                     const SizedBox(height: 16),
 
+                    // Image attachments row
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: _pickImages,
+                          icon: const Icon(Icons.image_outlined),
+                          label: const Text('Attach Images'),
+                        ),
+                        const SizedBox(width: 8),
+                        if (_imageFiles.isNotEmpty)
+                          Chip(
+                            avatar: const Icon(Icons.image, size: 18),
+                            label: Text('${_imageFiles.length} selected'),
+                          ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
                     // Search Button
                     Consumer<LegalAnalysisProvider>(
                       builder: (context, provider, child) {
@@ -179,11 +267,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             : const Text('Tap to set your location'),
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const SettingsScreen(),
-                        ),
-                      );
+                      FocusScope.of(context).unfocus();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
+                          ),
+                        );
+                      });
                     },
                   ),
                 );
@@ -208,11 +300,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     elevation: 2,
                     child: InkWell(
                       onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const SavedCasesScreen(),
-                          ),
-                        );
+                        FocusScope.of(context).unfocus();
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const SavedCasesScreen(),
+                            ),
+                          );
+                        });
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -348,6 +444,37 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
     );
+  }
+
+  Future<void> _toggleListening() async {
+    if (!_listening) {
+      final available = await _speech.initialize();
+      if (!available) return;
+      setState(() => _listening = true);
+      _speech.listen(
+        onResult: (r) {
+          setState(() {
+            _searchController.text = r.recognizedWords;
+          });
+        },
+        listenMode: stt.ListenMode.search,
+      );
+    } else {
+      _speech.stop();
+      setState(() => _listening = false);
+    }
+  }
+
+  Future<void> _pickImages() async {
+    final res = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.custom,
+      allowedExtensions: ['png', 'jpg', 'jpeg', 'heic', 'webp'],
+    );
+    if (res == null) return;
+    setState(() {
+      _imageFiles = res.files;
+    });
   }
 
   @override

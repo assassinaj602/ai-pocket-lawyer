@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/storage_service.dart';
 import '../providers/app_settings_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -17,6 +18,110 @@ class SettingsScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16.0),
             children: [
+              // AI Configuration: API Key
+              Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.vpn_key,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'AI Configuration',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Provide your OpenRouter API key if the app cannot read .env (common on web hosting). The key is stored only on this device.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 12),
+                      Builder(
+                        builder: (context) {
+                          final saved = StorageService.getApiKey();
+                          final masked =
+                              (saved == null || saved.isEmpty)
+                                  ? 'Not set'
+                                  : '${saved.substring(0, 8)}•••${saved.substring(saved.length - 4)}';
+                          return Row(
+                            children: [
+                              Expanded(child: Text('OpenRouter Key: $masked')),
+                              TextButton.icon(
+                                onPressed: () async {
+                                  final ctrl = TextEditingController(
+                                    text: saved,
+                                  );
+                                  final ok = await showDialog<bool>(
+                                    context: context,
+                                    builder:
+                                        (_) => AlertDialog(
+                                          title: const Text(
+                                            'Set OpenRouter API Key',
+                                          ),
+                                          content: TextField(
+                                            controller: ctrl,
+                                            decoration: const InputDecoration(
+                                              labelText: 'sk-or-…',
+                                            ),
+                                            obscureText: true,
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed:
+                                                  () => Navigator.pop(
+                                                    context,
+                                                    false,
+                                                  ),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            FilledButton(
+                                              onPressed:
+                                                  () => Navigator.pop(
+                                                    context,
+                                                    true,
+                                                  ),
+                                              child: const Text('Save'),
+                                            ),
+                                          ],
+                                        ),
+                                  );
+                                  if (ok == true) {
+                                    await StorageService.setApiKey(
+                                      ctrl.text.trim(),
+                                    );
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('API key saved.'),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                                icon: const Icon(Icons.edit),
+                                label: const Text('Set/Update'),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               // Jurisdiction Section
               Card(
                 elevation: 2,

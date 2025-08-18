@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'dart:io';
 import '../models/analysis_result.dart';
 import '../services/ai_legal_service.dart';
 import '../services/storage_service.dart';
@@ -28,23 +29,34 @@ class LegalAnalysisProvider extends ChangeNotifier {
     required String query,
     required String jurisdiction,
     String? userLocation,
+    List<File>? imageFiles,
   }) async {
     _setLoading(true);
     _clearError();
 
     try {
+      print('Starting analysis with ${imageFiles?.length ?? 0} images');
+
       final result = await _aiService.analyzeLegalQuestion(
         question: query,
         jurisdiction: jurisdiction,
+        imageFiles: imageFiles,
       );
 
       _currentAnalysis = result;
 
       // Auto-save the analysis
-      await StorageService.saveAnalysis(result);
-      await loadSavedAnalyses();
+      try {
+        await StorageService.saveAnalysis(result);
+        await loadSavedAnalyses();
+      } catch (saveError) {
+        print('Warning: Could not save analysis: $saveError');
+        // Don't throw here - analysis was successful, just saving failed
+      }
     } catch (e) {
+      print('Analysis error: $e');
       _setError('Failed to analyze legal problem: ${e.toString()}');
+      _currentAnalysis = null; // Clear any partial result
     } finally {
       _setLoading(false);
     }

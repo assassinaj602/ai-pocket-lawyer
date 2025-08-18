@@ -8,8 +8,21 @@ import '../models/analysis_result.dart';
 import '../widgets/legal_letter_viewer.dart';
 import '../widgets/contact_list_card.dart';
 
-class ResultsScreen extends StatelessWidget {
+class ResultsScreen extends StatefulWidget {
   const ResultsScreen({super.key});
+
+  @override
+  State<ResultsScreen> createState() => _ResultsScreenState();
+}
+
+class _ResultsScreenState extends State<ResultsScreen> {
+  final TextEditingController _followUpController = TextEditingController();
+
+  @override
+  void dispose() {
+    _followUpController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -390,6 +403,67 @@ class ResultsScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      bottomNavigationBar: Consumer<LegalAnalysisProvider>(
+        builder: (context, provider, _) {
+          final analysis = provider.currentAnalysis;
+          if (analysis == null) return const SizedBox.shrink();
+          return SafeArea(
+            minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _followUpController,
+                    minLines: 1,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      hintText: 'Ask a follow-up question…',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Send',
+                  onPressed:
+                      provider.isLoading
+                          ? null
+                          : () async {
+                            final text = _followUpController.text.trim();
+                            if (text.isEmpty) return;
+                            final prev = analysis.userQuery;
+                            final prevAns = analysis.rightsSummary;
+                            final excerpt =
+                                prevAns.length > 1000
+                                    ? prevAns.substring(0, 1000)
+                                    : prevAns;
+                            final follow =
+                                'Follow-up context:\n- Original question: '
+                                '$prev\n- Previous AI summary (excerpt): '
+                                '$excerpt\n\nFollow-up question: $text';
+                            await context
+                                .read<LegalAnalysisProvider>()
+                                .analyzeProblem(
+                                  query: follow,
+                                  jurisdiction: analysis.jurisdiction,
+                                );
+                            if (mounted) {
+                              _followUpController.clear();
+                            }
+                          },
+                  icon:
+                      provider.isLoading
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Icon(Icons.send),
                 ),
               ],
             ),

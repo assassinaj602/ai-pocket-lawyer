@@ -5,9 +5,11 @@ import '../models/legal_models.dart';
 class StorageService {
   static const String _analysisBoxName = 'legal_analysis';
   static const String _settingsBoxName = 'app_settings';
+  static const String _casesBoxName = 'case_records';
 
   static Box<LegalAnalysisResult>? _analysisBox;
   static Box? _settingsBox;
+  static Box? _casesBox;
 
   static Future<void> initialize() async {
     await Hive.initFlutter();
@@ -26,6 +28,7 @@ class StorageService {
     // Open boxes
     _analysisBox = await Hive.openBox<LegalAnalysisResult>(_analysisBoxName);
     _settingsBox = await Hive.openBox(_settingsBoxName);
+    _casesBox = await Hive.openBox(_casesBoxName);
   }
 
   // Legal Analysis Storage
@@ -93,6 +96,7 @@ class StorageService {
   static Future<void> close() async {
     await _analysisBox?.close();
     await _settingsBox?.close();
+    await _casesBox?.close();
   }
 }
 
@@ -156,5 +160,43 @@ class LegalAidContactAdapter extends TypeAdapter<LegalAidContact> {
       'description': obj.description,
       'areas': obj.areas,
     });
+  }
+}
+
+// Case storage helpers (no adapters; store as plain Map JSON)
+extension CaseStorage on StorageService {
+  // Save or update a case record
+  static Future<void> saveCaseRecord(Map<String, dynamic> caseJson) async {
+    final id = caseJson['id'];
+    if (id == null) return;
+    await StorageService._casesBox?.put(id, caseJson);
+  }
+
+  // Get all case records
+  static List<Map<String, dynamic>> getAllCaseRecords() {
+    final values = StorageService._casesBox?.values.toList() ?? [];
+    return values
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList()
+        .reversed
+        .toList();
+  }
+
+  // Get a case by id
+  static Map<String, dynamic>? getCaseRecord(String id) {
+    final v = StorageService._casesBox?.get(id);
+    if (v is Map) return Map<String, dynamic>.from(v);
+    return null;
+  }
+
+  // Delete a case by id
+  static Future<void> deleteCaseRecord(String id) async {
+    await StorageService._casesBox?.delete(id);
+  }
+
+  // Clear all cases
+  static Future<void> clearAllCaseRecords() async {
+    await StorageService._casesBox?.clear();
   }
 }

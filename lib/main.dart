@@ -5,11 +5,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'providers/legal_analysis_provider.dart';
 import 'providers/app_settings_provider.dart';
+import 'providers/case_provider.dart';
 import 'services/storage_service.dart';
 import 'services/legal_data_service.dart';
-import 'screens/home_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/get_started_screen.dart';
+import 'screens/root_nav.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,6 +54,7 @@ class AILawyerApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AppSettingsProvider()),
         ChangeNotifierProvider(create: (_) => LegalAnalysisProvider()),
+        ChangeNotifierProvider(create: (_) => CaseProvider()),
       ],
       child: Consumer<AppSettingsProvider>(
         builder: (context, settingsProvider, child) {
@@ -268,11 +270,13 @@ class _AppInitializerState extends State<AppInitializer> {
         context,
         listen: false,
       );
+      final caseProvider = Provider.of<CaseProvider>(context, listen: false);
 
       // Ensure splash is visible briefly even on fast devices
       await Future.wait([
         settingsProvider.initialize(),
         analysisProvider.initialize(),
+        caseProvider.initialize(),
         Future.delayed(const Duration(milliseconds: 900)),
       ]);
 
@@ -301,6 +305,6 @@ class _AppInitializerState extends State<AppInitializer> {
       return const GetStartedScreen();
     }
 
-    return const HomeScreen();
+    return const RootNav();
   }
 }
