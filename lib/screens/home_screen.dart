@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -44,25 +45,96 @@ class _HomeScreenState extends State<HomeScreen> {
     List<File>? imageFileObjects;
     if (_imageFiles.isNotEmpty) {
       try {
-        imageFileObjects =
-            _imageFiles
-                .where((pf) => pf.path != null && pf.path!.isNotEmpty)
-                .map((pf) => File(pf.path!))
-                .where(
-                  (file) => file.existsSync(),
-                ) // Only include files that actually exist
-                .toList();
+        print('DEBUG: Processing ${_imageFiles.length} image files');
 
-        if (imageFileObjects.isEmpty) {
-          // If no valid files, set to null to avoid processing
-          imageFileObjects = null;
-          print('Warning: No valid image files found');
+        // Check if we're on web platform
+        if (kIsWeb) {
+          print(
+            'DEBUG: Running on web platform - using bytes instead of paths',
+          );
+
+          // On web, we need to handle files differently
+          // For now, we'll create a context message without actual file processing
+          imageFileObjects = null; // Set to null for web for now
+
+          // Show info to user about web limitations
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Image analysis: Please describe your legal document in the text field. Full image OCR is available on desktop versions.',
+                ),
+                backgroundColor: Colors.blue,
+                duration: Duration(seconds: 4),
+              ),
+            );
+          }
         } else {
-          print('Found ${imageFileObjects.length} valid image files');
+          // Desktop/mobile platform - use file paths
+          print('DEBUG: Running on desktop/mobile platform - using file paths');
+
+          // First, check all platform files
+          for (var pf in _imageFiles) {
+            print(
+              'DEBUG: Platform file - name: ${pf.name}, path: ${pf.path}, size: ${pf.size}',
+            );
+          }
+
+          imageFileObjects =
+              _imageFiles
+                  .where((pf) => pf.path != null && pf.path!.isNotEmpty)
+                  .map((pf) {
+                    print(
+                      'DEBUG: Converting platform file to File: ${pf.path}',
+                    );
+                    return File(pf.path!);
+                  })
+                  .where((file) {
+                    final exists = file.existsSync();
+                    print('DEBUG: File ${file.path} exists: $exists');
+                    return exists;
+                  }) // Only include files that actually exist
+                  .toList();
+
+          if (imageFileObjects.isEmpty) {
+            // If no valid files, set to null to avoid processing
+            imageFileObjects = null;
+            print('WARNING: No valid image files found after processing');
+
+            // Show warning to user
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Warning: Selected images could not be accessed',
+                  ),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+          } else {
+            print(
+              'SUCCESS: Found ${imageFileObjects.length} valid image files',
+            );
+            for (var file in imageFileObjects) {
+              print('DEBUG: Valid file: ${file.path}');
+            }
+          }
         }
       } catch (e) {
-        print('Error processing image files: $e');
+        print('ERROR: Error processing image files: $e');
+        print('ERROR: Stack trace: ${StackTrace.current}');
         imageFileObjects = null; // Fallback to no images
+
+        // Show error to user
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error processing images: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
 
@@ -207,11 +279,106 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(width: 8),
                         if (_imageFiles.isNotEmpty)
-                          Chip(
-                            avatar: const Icon(Icons.image, size: 18),
-                            label: Text('${_imageFiles.length} selected'),
+                          Expanded(
+                            child: Wrap(
+                              children: [
+                                Chip(
+                                  avatar: const Icon(Icons.image, size: 18),
+                                  label: Text(
+                                    '${_imageFiles.length} image${_imageFiles.length > 1 ? 's' : ''} attached',
+                                  ),
+                                  backgroundColor: Colors.green.withOpacity(
+                                    0.1,
+                                  ),
+                                  onDeleted: () {
+                                    setState(() {
+                                      _imageFiles.clear();
+                                    });
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                if (_imageFiles.isNotEmpty)
+                                  Chip(
+                                    label: const Text('Ready for AI analysis'),
+                                    backgroundColor: Colors.blue.withOpacity(
+                                      0.1,
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
                       ],
+                    ),
+
+                    // Show selected image names
+                    if (_imageFiles.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Attached Documents:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            ..._imageFiles
+                                .map(
+                                  (file) => Text(
+                                    '• ${file.name}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ],
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 16),
+
+                    // Image Analysis Info
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).primaryColor.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Theme.of(context).primaryColor,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Attach legal documents (contracts, notices, tickets, etc.) for AI-powered analysis and specific guidance.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
 
                     const SizedBox(height: 8),

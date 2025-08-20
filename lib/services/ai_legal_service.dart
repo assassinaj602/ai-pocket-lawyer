@@ -59,9 +59,9 @@ class AILegalService {
   AILegalService() {
     _dio.options = BaseOptions(
       headers: {'Content-Type': 'application/json'},
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(minutes: 5),
-      sendTimeout: const Duration(seconds: 30),
+      connectTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(minutes: 10),
+      sendTimeout: const Duration(minutes: 2),
     );
   }
 
@@ -126,15 +126,26 @@ class AILegalService {
                 .map((file) => file.path)
                 .toList();
 
+        print('DEBUG: Image paths found: $imagePaths');
+
         if (imagePaths.isNotEmpty) {
           final ocrResults = await OCRService.extractTextFromImages(imagePaths);
+          print('DEBUG: OCR results count: ${ocrResults.length}');
 
           if (ocrResults.isNotEmpty) {
             imageContext = '\n\n--- ATTACHED DOCUMENTS/IMAGES ---\n';
             ocrResults.forEach((fileName, extractedText) {
+              print('DEBUG: Processing file: $fileName');
               imageContext += '\n**$fileName:**\n$extractedText\n';
             });
             imageContext += '--- END OF ATTACHED DOCUMENTS ---\n';
+            print(
+              'DEBUG: Image context created: ${imageContext.length} characters',
+            );
+          } else {
+            print('DEBUG: No OCR results returned');
+            imageContext =
+                '\n\n[Note: Images were attached but OCR processing returned no results]\n';
           }
         } else {
           print('No valid image paths found');
@@ -143,9 +154,18 @@ class AILegalService {
         }
       } catch (e) {
         print('DEBUG: OCR processing failed: $e');
+        print('DEBUG: Stack trace: ${StackTrace.current}');
         imageContext =
-            '\n\n[Note: ${imageFiles.length} image(s) were attached but could not be processed due to access issues]\n';
+            '\n\n[Note: ${imageFiles.length} image(s) were attached but could not be processed due to access issues: ${e.toString()}]\n';
       }
+    } else if (question.toLowerCase().contains('picture') ||
+        question.toLowerCase().contains('image') ||
+        question.toLowerCase().contains('photo') ||
+        question.toLowerCase().contains('document') ||
+        question.toLowerCase().contains('attached')) {
+      // User mentions images but none were processed
+      imageContext =
+          '\n\n[Note: You mentioned attachments, but no images were successfully processed. Please describe the document content in your question or try again with the desktop version for full image analysis.]\n';
     }
 
     // Step 1: Get local legal data (non-fatal)
@@ -194,13 +214,24 @@ class AILegalService {
       );
     }
 
-    aiEnhancedResponse = await _getAIEnhancedResponse(
-      question: question + imageContext,
-      context: combinedContext,
-      jurisdiction: jurisdiction,
-      apiKey: apiKey,
-      model: model,
-    );
+    try {
+      aiEnhancedResponse = await _getAIEnhancedResponse(
+        question: question + imageContext,
+        context: combinedContext,
+        jurisdiction: jurisdiction,
+        apiKey: apiKey,
+        model: model,
+        imageContext: imageContext,
+      );
+    } catch (e) {
+      print('DEBUG: AI service failed, providing fallback response: $e');
+      // Provide a fallback response when AI service fails
+      aiEnhancedResponse = _createFallbackResponse(
+        question,
+        jurisdiction,
+        localScenarios,
+      );
+    }
 
     print(
       'DEBUG: AI Response received: ${aiEnhancedResponse.isNotEmpty ? 'Yes' : 'No'}',
@@ -220,45 +251,67 @@ class AILegalService {
     );
   }
 
-  /// Get AI-enhanced response from OpenRouter
+  /// Get AI-enhanced response from OpenRouter with retry logic
   Future<String> _getAIEnhancedResponse({
     required String question,
     required String context,
     required String jurisdiction,
     required String apiKey,
     required String model,
+    String imageContext = '',
   }) async {
-    try {
-      print('DEBUG: Making API call to OpenRouter...');
+    int retryCount = 0;
+    const maxRetries = 2;
+    const retryDelaySeconds = 3;
 
-      final response = await _dio.post(
-        _openRouterBaseUrl,
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $apiKey',
-            'HTTP-Referer': 'https://ai-pocket-lawyer.com',
-            'X-Title': 'AI Pocket Lawyer',
-          },
-          receiveTimeout: const Duration(minutes: 5),
-          sendTimeout: const Duration(seconds: 30),
-        ),
-        data: {
-          'model': model,
-          'messages': [
-            {
-              'role': 'system',
-              'content':
-                  '''You are a professional legal advisor. Provide clear, specific legal guidance using the EXACT format below. Be concrete and avoid generic responses.
+    while (retryCount <= maxRetries) {
+      try {
+        if (retryCount > 0) {
+          print('DEBUG: Retry attempt $retryCount of $maxRetries...');
+          await Future.delayed(
+            Duration(seconds: retryDelaySeconds * retryCount),
+          );
+        } else {
+          print('DEBUG: Making API call to OpenRouter...');
+        }
+
+        final response = await _dio.post(
+          _openRouterBaseUrl,
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer $apiKey',
+              'HTTP-Referer': 'https://ai-pocket-lawyer.com',
+              'X-Title': 'AI Pocket Lawyer',
+            },
+            receiveTimeout: Duration(
+              minutes: retryCount == 0 ? 8 : 12,
+            ), // Increase timeout on retry
+            sendTimeout: const Duration(minutes: 2),
+          ),
+          data: {
+            'model': model,
+            'messages': [
+              {
+                'role': 'system',
+                'content':
+                    '''You are a professional legal advisor with expertise in document analysis and employment law. Provide clear, specific legal guidance using the EXACT format below. Be concrete and avoid generic responses.
+
+IMPORTANT: When users attach legal documents (images), they will be described in detail in the user's question. Analyze these document descriptions carefully and provide specific legal guidance based on the document content described.
+
+CRITICAL: Always directly answer the specific legal question being asked. If someone asks "Is X illegal?" provide a clear yes/no answer with explanation. If they ask about specific laws or violations, address those directly.
 
 ## Legal Analysis
 • Specific legal rules, statutes, or regulations that apply to this situation
 • Key thresholds, requirements, or criteria that determine legal outcomes  
 • Important deadlines, time limits, or procedural requirements
+• Analysis of any attached document content if provided
+• Direct answer to the specific question asked
 
 ## Your Rights
 • Specific rights the person has in this situation
 • What they are legally entitled to demand or receive
 • Legal protections available to them
+• Rights related to any documents mentioned
 
 ## Recommended Actions
 1. Immediate steps to take (within 24-48 hours)
@@ -270,6 +323,7 @@ class AILegalService {
 ## Helpful Links
 • [Legal Aid Directory](https://www.lsc.gov/what-legal-aid/find-legal-aid)
 • [State Bar Association](https://www.americanbar.org/groups/legal_aid_indigent_defense/resource_center_for_access_to_justice/ati-directory/)
+• [Department of Labor - Wage and Hour Division](https://www.dol.gov/agencies/whd) (for employment issues)
 • [Court Self-Help Resources](https://www.uscourts.gov/about-federal-courts/court-role-and-structure)
 
 ## Disclaimer
@@ -279,45 +333,108 @@ CRITICAL FORMATTING RULES:
 - Use the exact headings shown above with ## 
 - Use • for bullets and 1. 2. 3. for numbered lists
 - NEVER use placeholder tokens or variables in responses
-- Write actual dollar amounts as "fifteen dollars" or "dollar15", never use currency symbols with numbers
+- Write actual dollar amounts as "fifteen dollars" or "fifteen dollar", never use currency symbols with numbers
 - Make all links clickable using [Text](https://full-url.com) format
 - Replace generic links above with specific, relevant government or legal aid websites
 - Keep responses specific to the actual question asked
+- If document details are provided, analyze them thoroughly
+- Always provide a direct answer to questions like "Is X illegal?" or "What law applies?"
 - End with: "What other aspects of this situation would you like me to clarify?"''',
-            },
-            {
-              'role': 'user',
-              'content':
-                  'Question: $question\nJurisdiction: $jurisdiction\n\nContext: $context\n\nIf the question includes attached document descriptions or image file information, analyze the legal implications based on the provided context. For attached images, I will provide analysis context about the document type and content to help with your legal assessment.\n\nPlease follow the exact section headings above. Keep it natural, specific, include links, and avoid any placeholder symbols. End with a short line inviting follow-up questions so we can continue the conversation.',
-            },
-          ],
-          'max_tokens': 1200,
-          'temperature': 0.5,
-          'top_p': 0.7,
-        },
-      );
+              },
+              {
+                'role': 'user',
+                'content':
+                    'Question: $question\nJurisdiction: $jurisdiction\n\nContext: $context\n\n${imageContext.isNotEmpty ? "IMPORTANT: The user has attached legal document images that need analysis. The attached document details are provided in the question above. Please analyze the legal content from these attached documents carefully and provide specific guidance based on what you can determine from the document information provided." : "No documents were attached to this question."}\n\nPlease follow the exact section headings above. Keep it natural, specific, include relevant legal links, and avoid any placeholder symbols. End with a short line inviting follow-up questions so we can continue the conversation.',
+              },
+            ],
+            'max_tokens': 1200,
+            'temperature': 0.5,
+            'top_p': 0.7,
+          },
+        );
 
-      print('DEBUG: API Response status: ${response.statusCode}');
+        print('DEBUG: API Response status: ${response.statusCode}');
 
-      if (response.statusCode == 200) {
-        final dynamic content =
-            response.data['choices']?[0]?['message']?['content'];
-        if (content is! String || content.trim().isEmpty) {
-          throw Exception(
-            'AI responded with empty content or unexpected shape.',
-          );
+        if (response.statusCode == 200) {
+          final dynamic content =
+              response.data['choices']?[0]?['message']?['content'];
+          if (content is! String || content.trim().isEmpty) {
+            throw Exception(
+              'AI responded with empty content or unexpected shape.',
+            );
+          }
+
+          // Clean up any remaining placeholder tokens
+          final cleanedContent = _cleanUpResponse(content);
+          return cleanedContent;
+        } else {
+          throw Exception('OpenRouter API error: ${response.statusCode}');
+        }
+      } catch (e) {
+        print('DEBUG: AI API call failed: $e');
+
+        // Check if this is a timeout error and we can retry
+        bool shouldRetry = false;
+        if (e is DioException) {
+          switch (e.type) {
+            case DioExceptionType.receiveTimeout:
+            case DioExceptionType.connectionTimeout:
+            case DioExceptionType.sendTimeout:
+              shouldRetry = retryCount < maxRetries;
+              break;
+            case DioExceptionType.badResponse:
+            case DioExceptionType.cancel:
+            case DioExceptionType.connectionError:
+            default:
+              shouldRetry = false;
+              break;
+          }
         }
 
-        // Clean up any remaining placeholder tokens
-        final cleanedContent = _cleanUpResponse(content);
-        return cleanedContent;
-      } else {
-        throw Exception('OpenRouter API error: ${response.statusCode}');
+        if (shouldRetry) {
+          retryCount++;
+          print(
+            'DEBUG: Will retry due to timeout (attempt $retryCount of $maxRetries)',
+          );
+          continue; // Continue the retry loop
+        }
+
+        // If not retryable or out of retries, provide user-friendly error messages
+        if (e is DioException) {
+          switch (e.type) {
+            case DioExceptionType.receiveTimeout:
+              throw Exception(
+                'The AI service is taking longer than expected. This might be due to a complex query or high server load. Please try again with a simpler question or try again later.',
+              );
+            case DioExceptionType.connectionTimeout:
+              throw Exception(
+                'Unable to connect to the AI service. Please check your internet connection and try again.',
+              );
+            case DioExceptionType.sendTimeout:
+              throw Exception(
+                'Failed to send your request to the AI service. Please check your internet connection and try again.',
+              );
+            case DioExceptionType.badResponse:
+              throw Exception(
+                'The AI service returned an error. This might be due to server issues. Please try again later.',
+              );
+            case DioExceptionType.cancel:
+              throw Exception('Request was cancelled.');
+            case DioExceptionType.connectionError:
+              throw Exception(
+                'Connection error. Please check your internet connection and try again.',
+              );
+            default:
+              throw Exception('AI service error: ${e.message}');
+          }
+        }
+
+        rethrow;
       }
-    } catch (e) {
-      print('DEBUG: AI API call failed: $e');
-      rethrow;
     }
+
+    // This should never be reached, but just in case
+    throw Exception('Failed to get AI response after $maxRetries retries');
   }
 
   // Helper methods for building context and analysis results
@@ -372,7 +489,16 @@ CRITICAL FORMATTING RULES:
     final lower = query.toLowerCase();
     if (lower.contains('employment') ||
         lower.contains('work') ||
-        lower.contains('job')) {
+        lower.contains('job') ||
+        lower.contains('overtime') ||
+        lower.contains('wage') ||
+        lower.contains('salary') ||
+        lower.contains('payroll') ||
+        lower.contains('hours') ||
+        lower.contains('schedule') ||
+        lower.contains('boss') ||
+        lower.contains('supervisor') ||
+        lower.contains('employer')) {
       return 'employment';
     } else if (lower.contains('housing') ||
         lower.contains('rent') ||
@@ -410,5 +536,88 @@ CRITICAL FORMATTING RULES:
       }
     }
     return actions.take(5).toList();
+  }
+
+  /// Create a fallback response when AI service is unavailable
+  String _createFallbackResponse(
+    String question,
+    String jurisdiction,
+    List<LegalScenario> localScenarios,
+  ) {
+    final buffer = StringBuffer();
+
+    buffer.writeln('## Legal Analysis');
+    buffer.writeln(
+      '• AI service is currently unavailable, but here\'s what we found from our legal database:',
+    );
+
+    if (localScenarios.isNotEmpty) {
+      final relevantScenario = localScenarios.first;
+      buffer.writeln('• ${relevantScenario.applicableLaw}');
+      buffer.writeln(
+        '• This situation appears to be covered by the applicable legal framework',
+      );
+    } else {
+      buffer.writeln('• Your question relates to $jurisdiction legal matters');
+      if (question.toLowerCase().contains('overtime')) {
+        buffer.writeln(
+          '• Overtime laws typically require 1.5x pay for hours over 40 per week',
+        );
+        buffer.writeln(
+          '• The Fair Labor Standards Act (FLSA) governs most overtime requirements',
+        );
+      } else if (question.toLowerCase().contains('employment') ||
+          question.toLowerCase().contains('wage')) {
+        buffer.writeln(
+          '• Employment law protects workers\' rights regarding wages and working conditions',
+        );
+        buffer.writeln(
+          '• Contact your state\'s Department of Labor for specific guidance',
+        );
+      }
+    }
+
+    buffer.writeln('\n## Your Rights');
+    if (localScenarios.isNotEmpty) {
+      buffer.writeln('• ${localScenarios.first.rightsSummary}');
+    } else {
+      buffer.writeln(
+        '• You have the right to fair treatment under applicable employment laws',
+      );
+      buffer.writeln(
+        '• You can file complaints with relevant government agencies',
+      );
+    }
+
+    buffer.writeln('\n## Recommended Actions');
+    buffer.writeln('1. Document all relevant details of your situation');
+    buffer.writeln('2. Keep records of any communications or evidence');
+    buffer.writeln('3. Contact a local legal aid organization');
+    buffer.writeln('4. Consider consulting with an employment attorney');
+    buffer.writeln(
+      '5. File a complaint with the appropriate government agency if applicable',
+    );
+
+    buffer.writeln('\n## Helpful Links');
+    buffer.writeln(
+      '• [Legal Aid Directory](https://www.lsc.gov/what-legal-aid/find-legal-aid)',
+    );
+    buffer.writeln('• [Department of Labor](https://www.dol.gov/agencies/whd)');
+    buffer.writeln(
+      '• [State Bar Association](https://www.americanbar.org/groups/legal_aid_indigent_defense/resource_center_for_access_to_justice/ati-directory/)',
+    );
+
+    buffer.writeln('\n## Disclaimer');
+    buffer.writeln(
+      'This is general legal information, not legal advice. Consult with a qualified attorney for your specific situation.',
+    );
+    buffer.writeln(
+      '\nThe AI service is temporarily unavailable. For more detailed analysis, please try again later.',
+    );
+    buffer.writeln(
+      '\nWhat other aspects of this situation would you like me to clarify?',
+    );
+
+    return buffer.toString();
   }
 }

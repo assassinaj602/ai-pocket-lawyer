@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:uuid/uuid.dart';
 import '../models/case_models.dart';
 import '../services/storage_service.dart';
@@ -13,13 +14,32 @@ class CaseProvider extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> initialize() async {
-    await loadCases();
+    // Load cases without triggering listeners during initialization
+    await _loadCasesQuietly();
+  }
+
+  Future<void> _loadCasesQuietly() async {
+    try {
+      final list = CaseStorage.getAllCaseRecords();
+      _cases
+        ..clear()
+        ..addAll(list.map((e) => CaseRecord.fromJson(e)));
+      _loading = false;
+      _error = null;
+    } catch (e) {
+      _error = 'Failed to load cases: $e';
+      _loading = false;
+    }
   }
 
   Future<void> loadCases() async {
     _loading = true;
     _error = null;
-    notifyListeners();
+    // Use SchedulerBinding to avoid setState during build
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+
     try {
       final list = CaseStorage.getAllCaseRecords();
       _cases
@@ -29,7 +49,10 @@ class CaseProvider extends ChangeNotifier {
       _error = 'Failed to load cases: $e';
     } finally {
       _loading = false;
-      notifyListeners();
+      // Use SchedulerBinding to avoid setState during build
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
     }
   }
 

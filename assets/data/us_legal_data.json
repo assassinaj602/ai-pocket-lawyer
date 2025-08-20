@@ -51,6 +51,34 @@
             "Consider consulting employment attorney"
           ],
           "letter_template": "harassment_complaint"
+        },
+        {
+          "id": "us_employment_002",
+          "problem": "Unpaid overtime",
+          "applicable_law": "Fair Labor Standards Act (FLSA) requires overtime pay at 1.5x regular rate for hours over 40 per week for non-exempt employees",
+          "rights_summary": "You have the right to overtime pay if you are a non-exempt employee working more than 40 hours per week. Overtime must be paid at time-and-a-half your regular rate.",
+          "actions": [
+            "Document all hours worked including start and end times",
+            "Keep records of any work done outside regular hours",
+            "Calculate total unpaid overtime compensation owed",
+            "File complaint with Department of Labor Wage and Hour Division",
+            "Contact employment attorney for potential wage claim"
+          ],
+          "letter_template": "overtime_demand"
+        },
+        {
+          "id": "us_employment_003",
+          "problem": "Wage theft",
+          "applicable_law": "FLSA and state wage laws require employers to pay all earned wages including minimum wage and overtime",
+          "rights_summary": "You have the right to receive all wages earned, including minimum wage, overtime pay, and final paychecks upon termination.",
+          "actions": [
+            "Calculate total wages owed including unpaid hours and overtime",
+            "Request wage records from employer in writing",
+            "File complaint with state labor department",
+            "File complaint with federal Department of Labor",
+            "Consider private lawsuit for unpaid wages plus damages"
+          ],
+          "letter_template": "wage_demand"
         }
       ]
     },

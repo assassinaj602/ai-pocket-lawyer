@@ -55,7 +55,26 @@ class LegalAnalysisProvider extends ChangeNotifier {
       }
     } catch (e) {
       print('Analysis error: $e');
-      _setError('Failed to analyze legal problem: ${e.toString()}');
+      String errorMessage = 'Failed to analyze legal problem';
+
+      // Provide more specific error messages
+      if (e.toString().contains('OPENROUTER_API_KEY')) {
+        errorMessage =
+            'Missing API key. Please add your OpenRouter API key in settings or .env file to enable AI analysis.';
+      } else if (e.toString().contains('network') ||
+          e.toString().contains('connection')) {
+        errorMessage =
+            'Network error. Please check your internet connection and try again.';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage =
+            'Request timeout. Please try again with a shorter question or fewer images.';
+      } else if (e.toString().contains('image') ||
+          e.toString().contains('OCR')) {
+        errorMessage =
+            'Error processing attached images. Please try with different images or without attachments.';
+      }
+
+      _setError(errorMessage);
       _currentAnalysis = null; // Clear any partial result
     } finally {
       _setLoading(false);
